@@ -22,17 +22,17 @@
 #'   specific episode number. Default is "all".
 #'
 #' @return A data frame with one row per episode containing:
-#'   \item{episode_id}{Numeric episode identifier}
-#'   \item{episode_start}{Date when the episode started}
-#'   \item{episode_end}{Date when the episode ended}
-#'   \item{episode_days}{Duration of the episode in days}
-#'   \item{discontinued}{Logical indicating if the episode is discontinued}
-#'   \item{status}{Character indicating episode status ("Active", "Inactive", or "Gap")}
-#'   \item{dates_count}{Number of dates in the episode}
-#'   \item{dates_avg_days_between}{Average number of days between consecutive dates in the episode}
-#'   \item{dates_sd_days_between}{Standard deviation of days between consecutive dates}
-#'   \item{gap_days}{Number of days between this episode and the next one (NA for the last episode)}
-#'   \item{[other variables]}{Any fixed variables from the input data frame}
+#'   * **episode_id**: Numeric episode identifier
+#'   * **episode_start**: Date when the episode started
+#'   * **episode_end**: Date when the episode ended
+#'   * **episode_days**: Duration of the episode in days
+#'   * **discontinued**: Logical indicating if the episode is discontinued
+#'   * **status**: Character indicating episode status ("Active", "Inactive", or "Gap")
+#'   * **dates_count**: Number of dates in the episode
+#'   * **dates_avg_days_between**: Average number of days between consecutive dates in the episode
+#'   * **dates_sd_days_between**: Standard deviation of days between consecutive dates
+#'   * **gap_days**: Number of days between this episode and the next one (NA for the last episode)
+#'   * **other variables**: Any fixed variables from the input data frame
 #'
 #' @examples
 #' data(substance_use)
@@ -46,6 +46,11 @@
 #'
 #' @seealso \code{\link{segment_episodes_by_covars}} for creating episode segments with covariate change tracking
 #' @export
+#' @importFrom dplyr group_by group_vars is_grouped_df pull filter select mutate arrange group_modify bind_cols
+#' @importFrom rlang enquo as_name sym
+#' @importFrom purrr map map_dfr
+#' @importFrom tibble tibble
+#' @importFrom cli cli_bullets cli_inform
 segment_episodes <- function(.data, date_col,
                              max_date = NULL,
                              gap_threshold = Inf,
@@ -344,7 +349,6 @@ segment_episodes <- function(.data, date_col,
 #' @param .data A data frame with time series data
 #' @param date_col Column containing date values to analyze
 #' @param covar_cols Columns to monitor for changes that trigger segmentation
-#' @param by Grouping variables to define separate time series (optional)
 #' @param max_date Optional reference date for determining active/inactive status
 #'   Defaults to the maximum date in the dataset
 #' @param gap_threshold Numeric value specifying the gap size that defines a new episode
@@ -359,22 +363,22 @@ segment_episodes <- function(.data, date_col,
 #'   specific episode number. Default is "all"
 #'
 #' @return A data frame with one row per segment containing:
-#'   \item{episode_id}{Numeric episode identifier}
-#'   \item{segment_id}{String segment identifier (format: "episode.segment")}
-#'   \item{episode_start}{Date when the episode started}
-#'   \item{episode_end}{Date when the episode ended}
-#'   \item{segment_start}{Date when the segment started}
-#'   \item{segment_end}{Date when the segment ended}
-#'   \item{episode_days}{Duration of the episode in days}
-#'   \item{segment_days}{Duration of the segment in days}
-#'   \item{discontinued}{Logical indicating if the segment is discontinued}
-#'   \item{status}{Character indicating segment status ("Active", "Inactive", "Gap", or "Ongoing")}
-#'   \item{dates_count}{Number of dates in the segment}
-#'   \item{dates_avg_days_between}{Average number of days between consecutive dates in the segment}
-#'   \item{dates_sd_days_between}{Standard deviation of days between consecutive dates}
-#'   \item{gap_days}{Number of days between this segment and the next one (NA for the last segment)}
-#'   \item{[covariates]}{Columns specified in covar_cols}
-#'   \item{[other variables]}{Any fixed variables from the input data frame}
+#'   * **episode_id**: Numeric episode identifier
+#'   * **segment_id**: String segment identifier (format: "episode.segment")
+#'   * **episode_start**: Date when the episode started
+#'   * **episode_end**: Date when the episode ended
+#'   * **segment_start**: Date when the segment started
+#'   * **segment_end**: Date when the segment ended
+#'   * **episode_days**: Duration of the episode in days
+#'   * **segment_days**: Duration of the segment in days
+#'   * **discontinued**: Logical indicating if the segment is discontinued
+#'   * **status**: Character indicating segment status ("Active", "Inactive", "Gap", or "Ongoing")
+#'   * **dates_count**: Number of dates in the segment
+#'   * **dates_avg_days_between**: Average number of days between consecutive dates in the segment
+#'   * **dates_sd_days_between**: Standard deviation of days between consecutive dates
+#'   * **gap_days**: Number of days between this segment and the next one (NA for the last segment)
+#'   * **covariates**: Columns specified in covar_cols
+#'   * **other variables**: Any fixed variables from the input data frame
 #'
 #' @examples
 #' data(substance_use)
@@ -389,62 +393,11 @@ segment_episodes <- function(.data, date_col,
 #'
 #' @seealso \code{\link{segment_episodes}} for creating episode segments without tracking covariate changes
 #' @export
-#' Segment time series data into episodes with covariate change tracking
-#'
-#' @description
-#' `segment_episodes_by_covars()` identifies episodes in temporal data by detecting gaps
-#' between dates that exceed a specified threshold, and further segments these
-#' episodes when covariate values change. An episode ends when the gap between
-#' consecutive dates is larger than `gap_threshold`. Within each episode, segments
-#' are created whenever covariate values change.
-#'
-#' @param .data A data frame with time series data
-#' @param date_col Column containing date values to analyze
-#' @param covar_cols Columns to monitor for changes that trigger segmentation
-#' @param max_date Optional reference date for determining active/inactive status
-#'   Defaults to the maximum date in the dataset
-#' @param gap_threshold Numeric value specifying the gap size that defines a new episode
-#'   Default is Inf
-#' @param gap_unit Units for the gap threshold. One of "days", "weeks", or "months"
-#'   Default is "days"
-#' @param inactive_threshold Threshold for considering an episode inactive
-#'   Default is the same as `gap_threshold`
-#' @param inactive_unit Units for the inactive threshold. One of "days", "weeks", or "months"
-#'   Default is the same as `gap_unit`
-#' @param episodes Which episodes to return. Options are "all", "first", "last", or a
-#'   specific episode number. Default is "all"
-#'
-#' @return A data frame with one row per segment containing:
-#'   \item{episode_id}{Numeric episode identifier}
-#'   \item{segment_id}{String segment identifier (format: "episode.segment")}
-#'   \item{episode_start}{Date when the episode started}
-#'   \item{episode_end}{Date when the episode ended}
-#'   \item{segment_start}{Date when the segment started}
-#'   \item{segment_end}{Date when the segment ended}
-#'   \item{episode_days}{Duration of the episode in days}
-#'   \item{segment_days}{Duration of the segment in days}
-#'   \item{discontinued}{Logical indicating if the segment is discontinued}
-#'   \item{status}{Character indicating segment status ("Active", "Inactive", "Gap", or "Ongoing")}
-#'   \item{dates_count}{Number of dates in the segment}
-#'   \item{dates_avg_days_between}{Average number of days between consecutive dates in the segment}
-#'   \item{dates_sd_days_between}{Standard deviation of days between consecutive dates}
-#'   \item{gap_days}{Number of days between this segment and the next one (NA for the last segment)}
-#'   \item{[covariates]}{Columns specified in covar_cols}
-#'   \item{[other variables]}{Any fixed variables from the input data frame}
-#'
-#' @examples
-#' data(substance_use)
-#' treatment_episodes_by_covars <- substance_use |>
-#'   group_by(client_id) |>
-#'   segment_episodes_by_covars(
-#'     visit_date,
-#'     covar_cols = c("substance_use_past_week", "quality_of_life_score", "medication_dose_mg"),
-#'     gap_threshold = 2,
-#'     gap_unit = "months"
-#'   )
-#'
-#' @seealso \code{\link{segment_episodes}} for creating episode segments without tracking covariate changes
-#' @export
+#' @importFrom dplyr group_by group_vars is_grouped_df ungroup pull filter select mutate arrange summarize group_modify bind_cols bind_rows n_distinct
+#' @importFrom rlang enquo sym as_name
+#' @importFrom purrr map map_dfr map_dbl map_lgl reduce
+#' @importFrom tibble tibble as_tibble
+#' @importFrom cli cli_bullets cli_inform
 segment_episodes_by_covars <- function(.data, date_col,
                                        covar_cols,
                                        max_date = NULL,
@@ -849,9 +802,9 @@ segment_episodes_by_covars <- function(.data, date_col,
 #'   Defaults to the current system date.
 #'
 #' @return The input data frame with additional columns for each threshold:
-#'   \item{[threshold]_[unit]_date}{The date corresponding to [threshold] [unit] after episode_start}
-#'   \item{[threshold]_[unit]_eligible}{Logical indicating if enough time has passed to evaluate this threshold}
-#'   \item{[threshold]_[unit]_continued}{Logical indicating if the episode continued past this threshold}
+#'   * **threshold_unit_date**: The date corresponding to threshold unit after episode_start
+#'   * **threshold_unit_eligible**: Logical indicating if enough time has passed to evaluate this threshold
+#'   * **threshold_unit_continued**: Logical indicating if the episode continued past this threshold
 #'
 #' @examples
 #' data(substance_use)
@@ -867,6 +820,10 @@ segment_episodes_by_covars <- function(.data, date_col,
 #'
 #' @seealso \code{\link{segment_episodes}} for creating episode segments
 #' @export
+#' @importFrom dplyr mutate
+#' @importFrom rlang sym :=
+#' @importFrom purrr reduce
+#' @importFrom lubridate %m+%
 split_episode <- function(.data,
                           thresholds,
                           units = NULL,
@@ -899,11 +856,11 @@ split_episode <- function(.data,
 
   result <- .data |>
     dplyr::mutate(
-      episode_start = as.Date(episode_start),
-      episode_end = as.Date(episode_end)
+      episode_start = as.Date(.data$episode_start),
+      episode_end = as.Date(.data$episode_end)
     )
 
-  purrr::reduce(seq_along(thresholds), \(acc, i) {
+  purrr::reduce(seq_along(thresholds), function(acc, i) {
     threshold_value <- thresholds[i]
     threshold_unit <- units[i]
     threshold_period <- make_period(threshold_value, threshold_unit)
@@ -915,16 +872,16 @@ split_episode <- function(.data,
     if (threshold_unit == "months") {
       acc |>
         dplyr::mutate(
-          !!threshold_date_col := episode_start %m+% threshold_period,
+          !!threshold_date_col := .data$episode_start %m+% threshold_period,
           !!eligible_col := !!threshold_date_col <= max_date,
-          !!continued_col := !!eligible_col & episode_end >= !!threshold_date_col
+          !!continued_col := !!eligible_col & .data$episode_end >= !!threshold_date_col
         )
     } else {
       acc |>
         dplyr::mutate(
-          !!threshold_date_col := episode_start + threshold_period,
+          !!threshold_date_col := .data$episode_start + threshold_period,
           !!eligible_col := !!threshold_date_col <= max_date,
-          !!continued_col := !!eligible_col & episode_end >= !!threshold_date_col
+          !!continued_col := !!eligible_col & .data$episode_end >= !!threshold_date_col
         )
     }
   }, .init = result)

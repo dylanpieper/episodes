@@ -21,9 +21,11 @@ Defaults to the current system date.}
 }
 \value{
 The input data frame with additional columns for each threshold:
-\item{\link{threshold}_\link{unit}\emph{date}{The date corresponding to \link{threshold} \link{unit} after episode_start}
-\item{\link{threshold}}\link{unit}\emph{eligible}{Logical indicating if enough time has passed to evaluate this threshold}
-\item{\link{threshold}}\link{unit}_continued}{Logical indicating if the episode continued past this threshold}
+\itemize{
+\item \strong{threshold_unit_date}: The date corresponding to threshold unit after episode_start
+\item \strong{threshold_unit_eligible}: Logical indicating if enough time has passed to evaluate this threshold
+\item \strong{threshold_unit_continued}: Logical indicating if the episode continued past this threshold
+}
 }
 \description{
 \code{split_episode()} splits the output from \code{segment_episodes()} to analyze

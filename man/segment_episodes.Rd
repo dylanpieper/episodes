@@ -40,17 +40,19 @@ specific episode number. Default is "all".}
 }
 \value{
 A data frame with one row per episode containing:
-\item{episode_id}{Numeric episode identifier}
-\item{episode_start}{Date when the episode started}
-\item{episode_end}{Date when the episode ended}
-\item{episode_days}{Duration of the episode in days}
-\item{discontinued}{Logical indicating if the episode is discontinued}
-\item{status}{Character indicating episode status ("Active", "Inactive", or "Gap")}
-\item{dates_count}{Number of dates in the episode}
-\item{dates_avg_days_between}{Average number of days between consecutive dates in the episode}
-\item{dates_sd_days_between}{Standard deviation of days between consecutive dates}
-\item{gap_days}{Number of days between this episode and the next one (NA for the last episode)}
-\item{\link{other variables}}{Any fixed variables from the input data frame}
+\itemize{
+\item \strong{episode_id}: Numeric episode identifier
+\item \strong{episode_start}: Date when the episode started
+\item \strong{episode_end}: Date when the episode ended
+\item \strong{episode_days}: Duration of the episode in days
+\item \strong{discontinued}: Logical indicating if the episode is discontinued
+\item \strong{status}: Character indicating episode status ("Active", "Inactive", or "Gap")
+\item \strong{dates_count}: Number of dates in the episode
+\item \strong{dates_avg_days_between}: Average number of days between consecutive dates in the episode
+\item \strong{dates_sd_days_between}: Standard deviation of days between consecutive dates
+\item \strong{gap_days}: Number of days between this episode and the next one (NA for the last episode)
+\item \strong{other variables}: Any fixed variables from the input data frame
+}
 }
 \description{
 \code{segment_episodes()} identifies episodes in temporal data by detecting gaps between

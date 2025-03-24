@@ -12,6 +12,8 @@ validate_units <- function(gap_unit, inactive_unit) {
 }
 
 #' @noRd
+#' @importFrom dplyr filter pull
+#' @importFrom rlang .data
 categorize_variables <- function(data, group_vars, var_names_to_check) {
   if (length(var_names_to_check) == 0) {
     return(list(
@@ -45,12 +47,12 @@ categorize_variables <- function(data, group_vars, var_names_to_check) {
   }
 
   fixed_vars <- var_uniqueness |>
-    dplyr::filter(is_fixed) |>
-    dplyr::pull(variable)
+    dplyr::filter(.data$is_fixed) |>
+    dplyr::pull("variable")
 
   varying_vars <- var_uniqueness |>
-    dplyr::filter(!is_fixed) |>
-    dplyr::pull(variable)
+    dplyr::filter(!.data$is_fixed) |>
+    dplyr::pull("variable")
 
   list(
     fixed_vars = fixed_vars,
@@ -59,6 +61,7 @@ categorize_variables <- function(data, group_vars, var_names_to_check) {
 }
 
 #' @noRd
+#' @importFrom stats sd
 calculate_statistics <- function(dates) {
   dates_count <- length(dates)
 
@@ -86,6 +89,7 @@ calculate_statistics <- function(dates) {
 }
 
 #' @noRd
+#' @importFrom lubridate %m-%
 determine_status <- function(end_date, is_last_episode, is_last_segment = TRUE,
                              inactive_threshold, inactive_period, max_date) {
   if (!is_last_episode && is_last_segment) {
@@ -188,6 +192,7 @@ find_episode_boundaries <- function(dates, gap_threshold, gap_period) {
 }
 
 #' @noRd
+#' @importFrom lubridate period
 make_period <- function(value, unit) {
   if (is.infinite(value)) {
     if (unit == "days") {
