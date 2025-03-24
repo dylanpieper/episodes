@@ -42,6 +42,29 @@ episodes <- substance_use |>
   )
 ```
 
+Additional fixed variables are included in the results, while varying variables are excluded. Use `segment_episodes_by_covars()` to track changes in specific variables.
+
+### Identifying active vs. inactive episodes
+
+By default, `segment_episodes()` assigns the status of episodes as:
+
+-   **Active**: Recent episodes (based on `inactive_threshold`)
+-   **Inactive**: Episodes that ended before the inactive threshold
+-   **Gap**: Episodes that are followed by another episode
+
+``` r
+status_check <- substance_use |>
+  group_by(client_id) |>
+  segment_episodes(
+    visit_date, 
+    gap_threshold = 2, 
+    gap_unit = "months",
+    inactive_threshold = 3,
+    inactive_unit = "months"
+  ) |>
+  count(status)
+```
+
 ### Including covariate changes
 
 Track when important variables change within episodes using `segment_episodes_by_covars()`:
@@ -60,6 +83,8 @@ episodes_by_covars <- substance_use |>
   arrange(client_id, episode_id, segment_id)
 ```
 
+An additional status for **ongoing** episodes is included for the segmentation of episodes by changes in the covariates.
+
 ### Analyzing continuation (i.e., retention)
 
 The `split_episode()` function helps analyze whether episodes continue past specific time thresholds:
@@ -76,38 +101,6 @@ The function adds columns for each threshold:
 - `*_date`: The date corresponding to threshold after episode start
 - `*_eligible`: Whether enough time has passed to evaluate this threshold
 - `*_continued`: Whether the episode continued past this threshold
-
-## Features
-
-### Handling fixed and changing variables
-
-The package automatically distinguishes between:
-
--   Fixed variables (same value throughout a group)
--   Varying variables (values change within a group)
-
-Fixed variables are included in the results, while varying variables are excluded. Use `segment_episodes_by_covars()` to track changes in specific variables.
-
-### Identifying active vs. inactive episodes
-
-By default, `segment_episodes()` classifies episodes as:
-
--   **Active**: Recent episodes (based on `inactive_threshold`)
--   **Inactive**: Episodes that ended before the inactive threshold
--   **Gap**: Episodes that are followed by another episode
-
-``` r
-status_check <- substance_use |>
-  group_by(client_id) |>
-  segment_episodes(
-    visit_date, 
-    gap_threshold = 2, 
-    gap_unit = "months",
-    inactive_threshold = 3,
-    inactive_unit = "months"
-  ) |>
-  count(status)
-```
 
 ## Dataset
 
