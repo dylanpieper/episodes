@@ -4,3 +4,6 @@
 ^\.github$
 ^cran-comments\.md$
 ^episodes\.Rproj$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$

@@ -1,12 +1,14 @@
 # episodes <img src="man/figures/episodes-hex.png" align="right" width="140"/>
 
+[![R-CMD-check](https://github.com/dylanpieper/episodes/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/dylanpieper/episodes/actions/workflows/R-CMD-check.yaml)
+
 Segment longitudinal data into meaningful episodes based on temporal gaps and variable changes. It's designed for analyzing treatment patterns, patient journeys, and other time series data where interruptions and changes in covariates are significant. This tool is useful for survival analyses and other time-varying statistical methods requiring structured temporal data.
 
 Features:
 
 -   Identify episodes based on gaps between dates
 -   Track how variables change within episodes
--   Analyze retention across specified time thresholds
+-   Analyze continuation (i.e., retention) across specified time thresholds
 -   Support for grouped data workflows in the tidyverse style
 
 ## Installation
