@@ -60,7 +60,7 @@ episodes_by_covars <- substance_use |>
   arrange(client_id, episode_id, segment_id)
 ```
 
-### Analyzing retention
+### Analyzing continuation (i.e., retention)
 
 The `split_episode()` function helps analyze whether episodes continue past specific time thresholds:
 
