@@ -23,26 +23,61 @@ categorize_variables <- function(data, group_vars, var_names_to_check) {
   }
 
   if (length(group_vars) > 0) {
+    # Use safe evaluation to avoid warnings about uninitialised columns
     var_uniqueness <- purrr::map_dfr(var_names_to_check, function(var) {
-      groups <- data |>
-        dplyr::group_by(!!!rlang::syms(group_vars)) |>
-        dplyr::summarize(
-          n_unique = dplyr::n_distinct(.data[[var]]),
-          .groups = "drop"
+      # First check if the variable exists in the data
+      if (!var %in% names(data)) {
+        return(tibble::tibble(
+          variable = var,
+          is_fixed = TRUE  # Default to fixed if variable doesn't exist
+        ))
+      }
+      
+      # Calculate uniqueness safely
+      tryCatch({
+        groups <- data |>
+          dplyr::group_by(!!!rlang::syms(group_vars)) |>
+          dplyr::summarize(
+            n_unique = dplyr::n_distinct(.data[[var]]),
+            .groups = "drop"
+          )
+  
+        tibble::tibble(
+          variable = var,
+          is_fixed = all(groups$n_unique <= 1)
         )
-
-      tibble::tibble(
-        variable = var,
-        is_fixed = all(groups$n_unique <= 1)
-      )
+      }, error = function(e) {
+        # If there's an error, default to considering the variable as fixed
+        tibble::tibble(
+          variable = var,
+          is_fixed = TRUE
+        )
+      })
     })
   } else {
     var_uniqueness <- purrr::map_dfr(var_names_to_check, function(var) {
-      n_unique <- dplyr::n_distinct(data[[var]])
-      tibble::tibble(
-        variable = var,
-        is_fixed = n_unique <= 1
-      )
+      # Check if variable exists
+      if (!var %in% names(data)) {
+        return(tibble::tibble(
+          variable = var,
+          is_fixed = TRUE  # Default to fixed if variable doesn't exist
+        ))
+      }
+      
+      # Calculate uniqueness safely
+      tryCatch({
+        n_unique <- dplyr::n_distinct(data[[var]])
+        tibble::tibble(
+          variable = var,
+          is_fixed = n_unique <= 1
+        )
+      }, error = function(e) {
+        # If there's an error, default to considering the variable as fixed
+        tibble::tibble(
+          variable = var,
+          is_fixed = TRUE
+        )
+      })
     })
   }
 

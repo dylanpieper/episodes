@@ -33,6 +33,7 @@ whether episodes continue past specific time thresholds.
 }
 \examples{
 data(substance_use)
+# First, segment the data into episodes
 treatment_episodes <- substance_use |>
   group_by(client_id) |>
   segment_episodes(
@@ -40,8 +41,31 @@ treatment_episodes <- substance_use |>
     gap_threshold = 2,
     gap_unit = "months"
   )
+
+# Then analyze whether episodes continue past specific thresholds
 episode_retention <- treatment_episodes |>
   split_episode(thresholds = c(30, 60, 90, 180), units = "days")
+  
+# Analyze retention rates at different thresholds
+retention_summary <- episode_retention |>
+  summarize(
+    episodes_count = n(),
+    continued_30d = sum(days_30_continued, na.rm = TRUE),
+    continued_60d = sum(days_60_continued, na.rm = TRUE),
+    continued_90d = sum(days_90_continued, na.rm = TRUE),
+    continued_180d = sum(days_180_continued, na.rm = TRUE),
+    pct_30d = mean(days_30_continued, na.rm = TRUE) * 100,
+    pct_60d = mean(days_60_continued, na.rm = TRUE) * 100,
+    pct_90d = mean(days_90_continued, na.rm = TRUE) * 100,
+    pct_180d = mean(days_180_continued, na.rm = TRUE) * 100
+  )
+  
+# You can also use different time units
+monthly_retention <- treatment_episodes |>
+  split_episode(
+    thresholds = c(1, 3, 6, 12),
+    units = "months"
+  )
 
 }
 \seealso{

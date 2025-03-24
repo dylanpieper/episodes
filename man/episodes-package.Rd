@@ -8,6 +8,15 @@
 \description{
 Segment longitudinal data into meaningful episodes based on temporal gaps and variable changes. Designed for analyzing treatment patterns, patient journeys, and other time series data where interruptions and changes in covariates are significant. Functions support identifying discontinuities, tracking variable changes within episodes, and analyzing retention across specified time thresholds. Particularly useful for survival analyses and other time-varying statistical methods requiring structured temporal data.
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/dylanpieper/episodes}
+  \item \url{https://dylanpieper.github.io/episodes/}
+  \item Report bugs at \url{https://github.com/dylanpieper/episodes/issues}
+}
+
+}
 \author{
 \strong{Maintainer}: Dylan Pieper \email{dylanpieper@gmail.com}
 
