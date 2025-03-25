@@ -98,7 +98,11 @@ retention <- episodes |>
   )
 ```
 
-The function adds columns for each threshold: - `*_date`: The date corresponding to threshold after episode start - `*_eligible`: Whether enough time has passed to evaluate this threshold - `*_continued`: Whether the episode continued past this threshold
+The function adds columns for each threshold:
+
+-   `*_date`: The date corresponding to threshold after episode start
+-   `*_eligible`: Whether enough time has passed to evaluate this threshold
+-   `*_continued`: Whether the episode continued past this threshold
 
 ## Dataset
 
