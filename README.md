@@ -1,4 +1,4 @@
-# episodes <img src="man/figures/episodes-hex.png" align="right" width="140"/>
+# episodes <img src="man/figures/episodes-hex.svg" align="right" width="140"/>
 
 [![R-CMD-check](https://github.com/dylanpieper/episodes/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/dylanpieper/episodes/actions/workflows/R-CMD-check.yaml)
 
@@ -97,10 +97,7 @@ retention <- episodes |>
   )
 ```
 
-The function adds columns for each threshold:
-- `*_date`: The date corresponding to threshold after episode start
-- `*_eligible`: Whether enough time has passed to evaluate this threshold
-- `*_continued`: Whether the episode continued past this threshold
+The function adds columns for each threshold: - `*_date`: The date corresponding to threshold after episode start - `*_eligible`: Whether enough time has passed to evaluate this threshold - `*_continued`: Whether the episode continued past this threshold
 
 ## Dataset
 
