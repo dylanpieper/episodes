@@ -13,7 +13,8 @@ segment_episodes_by_covars(
   gap_unit = "days",
   inactive_threshold = gap_threshold,
   inactive_unit = gap_unit,
-  episodes = "all"
+  episodes = "all",
+  progress = TRUE
 )
 }
 \arguments{
@@ -40,6 +41,8 @@ Default is the same as \code{gap_unit}}
 
 \item{episodes}{Which episodes to return. Options are "all", "first", "last", or a
 specific episode number. Default is "all"}
+
+\item{progress}{Logical. Display a progress bar while processing? Default is TRUE}
 }
 \value{
 A data frame with one row per segment containing:

@@ -10,6 +10,7 @@ Features:
 -   Track how variables change within episodes
 -   Analyze continuation (i.e., retention) across episodes
 -   Support for grouped data workflows in the tidyverse style
+-   Track progress during long-running operations on large datasets
 
 ## Installation
 
