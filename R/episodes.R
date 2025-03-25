@@ -20,6 +20,7 @@
 #'   Default is the same as `gap_unit`.
 #' @param episodes Which episodes to return. Options are "all", "first", "last", or a
 #'   specific episode number. Default is "all".
+#' @param progress Logical. Display a progress bar while processing? Default is TRUE.
 #'
 #' @return A data frame with one row per episode containing:
 #'   * **episode_id**: Numeric episode identifier
@@ -46,18 +47,19 @@
 #'
 #' @seealso \code{\link{segment_episodes_by_covars}} for creating episode segments with covariate change tracking
 #' @export
-#' @importFrom dplyr group_by group_vars is_grouped_df pull filter select mutate arrange group_modify bind_cols
+#' @importFrom dplyr group_by group_vars is_grouped_df pull filter select mutate arrange group_modify bind_cols n_groups
 #' @importFrom rlang enquo as_name sym
 #' @importFrom purrr map map_dfr
 #' @importFrom tibble tibble
-#' @importFrom cli cli_bullets cli_inform
+#' @importFrom cli cli_bullets cli_inform cli_progress_bar cli_progress_update
 segment_episodes <- function(.data, date_col,
                              max_date = NULL,
                              gap_threshold = Inf,
                              gap_unit = "days",
                              inactive_threshold = gap_threshold,
                              inactive_unit = gap_unit,
-                             episodes = "all") {
+                             episodes = "all",
+                             progress = TRUE) {
   old_warn <- getOption("warn")
   options(warn = -1)
   on.exit(options(warn = old_warn), add = TRUE)
@@ -90,8 +92,15 @@ segment_episodes <- function(.data, date_col,
   fixed_vars <- var_cats$fixed_vars
   varying_vars <- var_cats$varying_vars
 
+  if (progress) {
+    pb <- cli::cli_progress_bar("Segmenting episodes", total = dplyr::n_groups(.data))
+  }
+  
   result <- .data |>
     dplyr::group_modify(function(df, group_keys) {
+      if (progress) {
+        cli::cli_progress_update(id = pb)
+      }
       df <- df |>
         dplyr::mutate(
           date_values = as.Date(!!date_var)
@@ -371,6 +380,7 @@ segment_episodes <- function(.data, date_col,
 #'   Default is the same as `gap_unit`
 #' @param episodes Which episodes to return. Options are "all", "first", "last", or a
 #'   specific episode number. Default is "all"
+#' @param progress Logical. Display a progress bar while processing? Default is TRUE
 #'
 #' @return A data frame with one row per segment containing:
 #'   * **episode_id**: Numeric episode identifier
@@ -407,7 +417,7 @@ segment_episodes <- function(.data, date_col,
 #' @importFrom rlang enquo sym as_name
 #' @importFrom purrr map map_dfr map_dbl map_lgl reduce
 #' @importFrom tibble tibble as_tibble
-#' @importFrom cli cli_bullets cli_inform
+#' @importFrom cli cli_bullets cli_inform cli_progress_bar cli_progress_update
 segment_episodes_by_covars <- function(.data, date_col,
                                        covar_cols,
                                        max_date = NULL,
@@ -415,7 +425,8 @@ segment_episodes_by_covars <- function(.data, date_col,
                                        gap_unit = "days",
                                        inactive_threshold = gap_threshold,
                                        inactive_unit = gap_unit,
-                                       episodes = "all") {
+                                       episodes = "all",
+                                       progress = TRUE) {
   old_warn <- getOption("warn")
   options(warn = -1)
   on.exit(options(warn = old_warn), add = TRUE)
@@ -727,7 +738,14 @@ segment_episodes_by_covars <- function(.data, date_col,
     segment_digits <- floor(log10(max_segment)) + 1
     segment_digits <- max(1, segment_digits)
 
+    if (progress) {
+      pb <- cli::cli_progress_bar("Segmenting episodes by covariates", total = length(groups))
+    }
+    
     results <- purrr::map(groups, function(group) {
+      if (progress) {
+        cli::cli_progress_update(id = pb)
+      }
       process_group(group, segment_digits)
     })
     results <- purrr::compact(results)
@@ -743,6 +761,11 @@ segment_episodes_by_covars <- function(.data, date_col,
     segment_digits <- floor(log10(max_segment)) + 1
     segment_digits <- max(1, segment_digits)
 
+    if (progress) {
+      pb <- cli::cli_progress_bar("Segmenting episodes by covariates", total = 1)
+      cli::cli_progress_update(id = pb)
+    }
+    
     final_result <- process_group(df, segment_digits)
     if (is.null(final_result)) {
       final_result <- data.frame()

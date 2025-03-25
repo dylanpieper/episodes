@@ -23,17 +23,14 @@ categorize_variables <- function(data, group_vars, var_names_to_check) {
   }
 
   if (length(group_vars) > 0) {
-    # Use safe evaluation to avoid warnings about uninitialised columns
     var_uniqueness <- purrr::map_dfr(var_names_to_check, function(var) {
-      # First check if the variable exists in the data
       if (!var %in% names(data)) {
         return(tibble::tibble(
           variable = var,
-          is_fixed = TRUE  # Default to fixed if variable doesn't exist
+          is_fixed = TRUE
         ))
       }
       
-      # Calculate uniqueness safely
       tryCatch({
         groups <- data |>
           dplyr::group_by(!!!rlang::syms(group_vars)) |>
@@ -47,7 +44,6 @@ categorize_variables <- function(data, group_vars, var_names_to_check) {
           is_fixed = all(groups$n_unique <= 1)
         )
       }, error = function(e) {
-        # If there's an error, default to considering the variable as fixed
         tibble::tibble(
           variable = var,
           is_fixed = TRUE
@@ -56,15 +52,13 @@ categorize_variables <- function(data, group_vars, var_names_to_check) {
     })
   } else {
     var_uniqueness <- purrr::map_dfr(var_names_to_check, function(var) {
-      # Check if variable exists
       if (!var %in% names(data)) {
         return(tibble::tibble(
           variable = var,
-          is_fixed = TRUE  # Default to fixed if variable doesn't exist
+          is_fixed = TRUE
         ))
       }
       
-      # Calculate uniqueness safely
       tryCatch({
         n_unique <- dplyr::n_distinct(data[[var]])
         tibble::tibble(
@@ -72,7 +66,6 @@ categorize_variables <- function(data, group_vars, var_names_to_check) {
           is_fixed = n_unique <= 1
         )
       }, error = function(e) {
-        # If there's an error, default to considering the variable as fixed
         tibble::tibble(
           variable = var,
           is_fixed = TRUE
