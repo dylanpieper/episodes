@@ -45,7 +45,7 @@ treatment_episodes <- substance_use |>
 # Then analyze whether episodes continue past specific thresholds
 episode_retention <- treatment_episodes |>
   split_episode(thresholds = c(30, 60, 90, 180), units = "days")
-  
+
 # Analyze retention rates at different thresholds
 retention_summary <- episode_retention |>
   summarize(
@@ -59,7 +59,7 @@ retention_summary <- episode_retention |>
     pct_90d = mean(days_90_continued, na.rm = TRUE) * 100,
     pct_180d = mean(days_180_continued, na.rm = TRUE) * 100
   )
-  
+
 # You can also use different time units
 monthly_retention <- treatment_episodes |>
   split_episode(
