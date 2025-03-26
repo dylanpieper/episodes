@@ -111,3 +111,5 @@ The package includes a simulated substance use treatment dataset:
 ``` r
 glimpse(substance_use)
 ```
+
+Read more about how to use this data to run survival analyses using `tidymodels` (`vignette("survival", package = "episodes")`).

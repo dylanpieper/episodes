@@ -2,6 +2,7 @@
 
 export("%m+%")
 export("%m-%")
+export(add_surv_time)
 export(segment_episodes)
 export(segment_episodes_by_covars)
 export(split_episode)

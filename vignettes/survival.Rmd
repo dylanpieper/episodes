@@ -1,0 +1,499 @@
+---
+title: "Survival Analysis with episodes and tidymodels"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{survival}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteDepends{episodes, tidymodels, censored, survival, ggsurvfit, dplyr}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  warning = FALSE,
+  message = FALSE
+)
+```
+
+## Introduction
+
+The `episodes` package segments longitudinal data into meaningful
+episodes based on temporal gaps and variable changes. It's designed for
+analyzing treatment patterns, patient journeys, and other time series
+data where interruptions and changes in covariates are important to
+model.
+
+This vignette demonstrates how to apply these features to survival
+analysis using the Cox proportional hazards model with both fixed and
+time-varying covariates. I will be using the simulated `substance_use`
+dataset included in the package.
+
+## Required Packages
+
+```{r}
+library(episodes)
+library(tidymodels)
+library(censored)
+library(survival)
+library(ggsurvfit)
+library(dplyr)
+
+surv_spec <- proportional_hazards() |>
+  set_engine("survival")
+```
+
+## Time to Discontinuation Analysis
+
+### Creating Episodes with Fixed Covariates
+
+Our first example examines time to treatment discontinuation, using a
+fixed-effects approach where covariates are considered constant
+throughout the episode.
+
+```{r}
+episodes_fixed <- substance_use |>
+  group_by(client_id) |>
+  segment_episodes(
+    date_col = visit_date,
+    gap_threshold = 60,
+    gap_unit = "days",
+    progress = FALSE
+  )
+
+model_result <- workflow() |>
+  add_formula(
+    Surv(episode_days, discontinued) ~
+      age + gender + race + substance + medication + mental_health_disorder +
+      died_ever + cluster(client_id)
+  ) |>
+  add_model(surv_spec) |>
+  fit(data = episodes_fixed) |>
+  extract_fit_parsnip() |>
+  tidy(exponentiate = TRUE, conf.int = TRUE, conf.level = 0.95)
+
+model_result
+```
+
+#### Interpreting the Results
+
+The model results show hazard ratios (HR) for each variable, where: - HR
+\< 1: Reduced risk of discontinuation (better retention) - HR \> 1:
+Increased risk of discontinuation (worse retention) - HR = 1: No effect
+on discontinuation risk
+
+Key findings:
+
+-   **Mental health disorder**: Clients with mental health disorders
+    have significantly better retention (HR = 0.689, 95% CI:
+    0.657-0.722), indicating a 31.1% reduction in discontinuation risk.
+
+-   **Mortality**: Clients who died have a 40% higher risk of treatment
+    discontinuation (HR = 1.40, 95% CI: 1.32-1.47).
+
+-   **Substance type**: Opiate users have a 15% higher risk of
+    discontinuation compared to alcohol users (HR = 1.15, 95% CI:
+    1.06-1.25).
+
+-   **Demographics**: Age, gender, and race show minimal effects on
+    treatment retention in this model.
+
+-   **Medications**: None of the medications show statistically
+    significant effects on retention, though point estimates suggest
+    small protective effects for most treatments.
+
+### Visualizing Survival by Mental Health Disorder Status
+
+We can visualize these differences with Kaplan-Meier curves:
+
+```{r}
+surv_curves <- survfit(
+  Surv(episode_days, discontinued) ~ mental_health_disorder,
+  data = episodes_fixed
+)
+
+ggsurvfit(surv_curves) +
+  add_confidence_interval() +
+  add_risktable() +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    x = "Days",
+    y = "Probability of Retention",
+    title = "Kaplan-Meier Curves by Mental Health Disorder Status"
+  )
+```
+
+The Kaplan-Meier plot confirms our model findings - clients with mental
+health disorders (blue line) have substantially better retention over
+time compared to those without (red line). At 500 days, approximately
+40% of clients with mental health disorders remain in treatment,
+compared to only about 20% of those without. The non-overlapping
+confidence intervals indicate this difference is statistically
+significant throughout the observation period.
+
+### Time-Varying Covariates Model
+
+The `segment_episodes_by_covars` function creates a dataset where
+observations are split whenever a specified covariate changes value.
+This allows us to incorporate time-varying covariates in survival
+analysis.
+
+```{r}
+episodes_tv <- substance_use |>
+  group_by(client_id) |>
+  segment_episodes_by_covars(
+    date_col = visit_date,
+    covar_cols = c(
+      "frequency_of_use", "housing"
+    ),
+    gap_threshold = 60,
+    gap_unit = "days",
+    progress = FALSE
+  ) |>
+  group_by(client_id, episode_id) |>
+  add_surv_time()
+
+tv_model_result <- workflow() |>
+  add_formula(
+    Surv(time = start_time, time2 = end_time, event = discontinued) ~
+      age + gender + race + substance + medication + mental_health_disorder +
+      frequency_of_use + housing + died_ever + cluster(client_id)
+  ) |>
+  add_model(surv_spec) |>
+  fit(data = episodes_tv) |>
+  extract_fit_parsnip() |>
+  tidy(exponentiate = TRUE, conf.int = TRUE, conf.level = 0.95)
+
+tv_model_result
+```
+
+#### Interpreting Time-Varying Results
+
+When we include time-varying covariates, we gain additional insights:
+
+-   **Mental health disorder** continues to show a strong protective
+    effect (HR = 0.678, 95% CI: 0.647-0.711), consistent with our
+    fixed-effects model.
+-   **Housing status** emerges as a significant predictor (housing.L, HR
+    = 1.62, 95% CI: 1.53-1.72), suggesting clients with unstable housing
+    have a 62% higher risk of discontinuation.
+-   **Mortality risk** shows a slightly attenuated effect (HR = 1.21 vs.
+    1.40 in the fixed model), suggesting some of the association is
+    explained by time-varying factors.
+-   **Substance type**: Opiate use remains associated with higher
+    discontinuation risk (HR = 1.17, 95% CI: 1.07-1.27).
+-   **Frequency of use** shows no clear linear relationship with
+    retention.
+
+The time-varying model provides a more nuanced understanding of
+retention dynamics, highlighting the importance of housing stability as
+a key factor in treatment continuation.
+
+## Time to Death Analysis
+
+### Last Episode Analysis
+
+We can also analyze time to death, focusing only on the last episode for
+each client:
+
+```{r}
+episodes_fixed_death <- substance_use |>
+  group_by(client_id) |>
+  segment_episodes(
+    date_col = visit_date,
+    gap_threshold = 60,
+    gap_unit = "days",
+    episodes = "last",
+    progress = FALSE
+  )
+
+death_model_result <- workflow() |>
+  add_formula(
+    Surv(episode_days, died_ever) ~
+      age + gender + race + substance + medication + mental_health_disorder
+  ) |>
+  add_model(surv_spec) |>
+  fit(data = episodes_fixed_death) |>
+  extract_fit_parsnip() |>
+  tidy(exponentiate = TRUE, conf.int = TRUE, conf.level = 0.95)
+
+death_model_result
+```
+
+#### Interpreting Mortality Results
+
+The mortality analysis reveals significant protective and risk factors:
+
+-   **Mental health disorder**: Strong protective association with
+    mortality (HR = 0.405, 95% CI: 0.363-0.452), suggesting a 59.5%
+    reduction in mortality risk for clients with mental health
+    disorders.
+-   **Substance type**: Opiate users have a 29% higher mortality risk
+    compared to alcohol users (HR = 1.29, 95% CI: 1.08-1.54).
+-   **Race**: "Other" race category shows elevated mortality risk (HR =
+    1.33, 95% CI: 1.05-1.70).
+-   **Medications**: While not reaching statistical significance at
+    p\<0.05, there's a trend toward protective effects for several
+    medications, particularly Acamprosate (HR = 0.853) and Naltrexone
+    (HR = 0.859).
+
+These findings highlight the complex relationship between mental health
+comorbidity and substance use outcomes, with mental health disorders
+associated with both better retention and lower mortality.
+
+### Visualizing Survival by Substance Type
+
+```{r}
+surv_curves_substance <- survfit(
+  Surv(episode_days, died_ever) ~ substance,
+  data = episodes_fixed_death
+)
+
+ggsurvfit(surv_curves_substance) +
+  add_confidence_interval() +
+  add_risktable() +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    x = "Days",
+    y = "Probability of Survival",
+    title = "Kaplan-Meier Curves by Substance"
+  )
+```
+
+The survival curves by substance type show that opiate users (red line)
+have consistently worse survival outcomes compared to alcohol users
+(blue line). The separation of curves begins early and widens over time,
+with approximately 85% of alcohol users surviving to 1000 days compared
+to only about 75% of opiate users. The risk table shows how the number
+at risk decreases over time for both groups.
+
+### Time-Varying Death Analysis
+
+For a more nuanced analysis, we can incorporate time-varying covariates:
+
+```{r}
+episodes_tv_death <- substance_use |>
+  group_by(client_id) |>
+  segment_episodes_by_covars(
+    date_col = visit_date,
+    covar_cols = c(
+      "died_last_visit", "frequency_of_use", "housing"
+    ),
+    gap_threshold = 60,
+    gap_unit = "days",
+    progress = FALSE
+  ) |>
+  group_by(client_id, episode_id) |>
+  add_surv_time()
+
+death_tv_model <- workflow() |>
+  add_formula(
+    Surv(time = start_time, time2 = end_time, event = died_last_visit) ~
+      age + gender + race + substance + medication + mental_health_disorder +
+      frequency_of_use + housing + cluster(client_id)
+  ) |>
+  add_model(surv_spec) |>
+  fit(data = episodes_tv_death) |>
+  extract_fit_parsnip() |>
+  tidy(exponentiate = TRUE, conf.int = TRUE, conf.level = 0.95)
+
+death_tv_model
+```
+
+#### Interpreting Time-Varying Mortality Results
+
+The time-varying mortality model reveals additional important factors:
+
+-   **Housing status** emerges as the strongest predictor (housing.L, HR
+    = 3.25, 95% CI: 2.91-3.62), indicating that unstable housing is
+    associated with more than three times the risk of mortality.
+-   **Substance type**: Opiate use shows an even stronger association
+    with mortality (HR = 2.11, 95% CI: 1.76-2.53) than in the fixed
+    model.
+-   **Mental health disorder** remains strongly protective (HR = 0.505,
+    95% CI: 0.452-0.565).
+-   **Frequency of use** shows a complex non-linear relationship with
+    mortality (both linear and quadratic terms significant).
+-   **Naltrexone** emerges as significantly protective (HR = 0.812, 95%
+    CI: 0.681-0.968), suggesting a 18.8% reduction in mortality risk.
+-   **Age** becomes marginally significant (HR = 1.00, p = 0.039),
+    suggesting a small increase in mortality risk with age.
+
+The time-varying model highlights how critical social determinants of
+health (housing) and current use patterns are in predicting mortality
+risk beyond static client characteristics.
+
+## Death Analysis Across All Episodes
+
+### Basic Model with Clustering
+
+When analyzing data across all episodes for each client, we use
+clustering to account for within-client correlation:
+
+```{r}
+episodes_clustered <- substance_use |>
+  group_by(client_id) |>
+  segment_episodes_by_covars(
+    date_col = visit_date,
+    covar_cols = c("died_last_visit"),
+    gap_threshold = 60,
+    gap_unit = "days",
+    progress = FALSE
+  ) |>
+  group_by(client_id, episode_id) |>
+  add_surv_time()
+
+clustered_model <- workflow() |>
+  add_formula(
+    Surv(time = start_time, time2 = end_time, event = died_last_visit) ~
+      age + gender + race + substance + medication + mental_health_disorder +
+      cluster(client_id)
+  ) |>
+  add_model(surv_spec) |>
+  fit(data = episodes_clustered) |>
+  extract_fit_parsnip() |>
+  tidy(exponentiate = TRUE, conf.int = TRUE, conf.level = 0.95)
+
+clustered_model
+```
+
+#### Interpreting Clustered Results
+
+When analyzing mortality across all episodes with clustering:
+
+-   **Mental health disorder** maintains its protective association (HR
+    = 0.471, 95% CI: 0.421-0.526).
+-   **Substance type**: Opiate use shows a strong association with
+    mortality (HR = 2.21, 95% CI: 1.84-2.64).
+-   **Medications**: Both Acamprosate (HR = 0.811, 95% CI: 0.666-0.988)
+    and Naltrexone (HR = 0.823, 95% CI: 0.691-0.980) show statistically
+    significant protective effects.
+-   **Race**: The "Other" race category continues to show elevated risk
+    (HR = 1.33, 95% CI: 1.04-1.69).
+
+By accounting for within-client correlation using the `cluster()`
+function, we ensure that standard errors are appropriately adjusted for
+repeated observations from the same clients.
+
+### Comprehensive Model
+
+Finally, we build a more comprehensive model with all available
+time-varying covariates:
+
+```{r}
+episodes_comprehensive <- substance_use |>
+  group_by(client_id) |>
+  segment_episodes_by_covars(
+    date_col = visit_date,
+    covar_cols = c(
+      "died_last_visit", "discontinued", "frequency_of_use", "housing"
+    ),
+    gap_threshold = 60,
+    gap_unit = "days",
+    progress = FALSE
+  ) |>
+  group_by(client_id, episode_id) |>
+  add_surv_time()
+
+comprehensive_model <- workflow() |>
+  add_formula(
+    Surv(time = start_time, time2 = end_time, event = died_last_visit) ~
+      age + gender + race + substance + medication + mental_health_disorder +
+      frequency_of_use + housing + discontinued + cluster(client_id)
+  ) |>
+  add_model(surv_spec) |>
+  fit(data = episodes_comprehensive) |>
+  extract_fit_parsnip() |>
+  tidy(exponentiate = TRUE, conf.int = TRUE, conf.level = 0.95)
+
+comprehensive_model
+```
+
+#### Interpreting the Comprehensive Model
+
+The fully specified model reveals the most complete picture of mortality
+risk factors:
+
+-   **Treatment discontinuation** is a major risk factor (HR = 2.98, 95%
+    CI: 2.66-3.34), with clients who discontinue treatment having nearly
+    three times the mortality risk.
+-   **Housing instability** remains a strong predictor (housing.L, HR =
+    2.77, 95% CI: 2.48-3.09), even after controlling for other factors.
+-   **Substance type**: Opiate use continues to show elevated risk (HR =
+    2.22, 95% CI: 1.85-2.66).
+-   **Mental health disorder** maintains its protective association (HR
+    = 0.573, 95% CI: 0.513-0.641), though the effect size is somewhat
+    attenuated in this full model.
+-   **Frequency of use** shows both linear (HR = 1.18, 95% CI:
+    1.02-1.37) and quadratic (HR = 1.34, 95% CI: 1.16-1.55)
+    relationships with mortality.
+-   **Naltrexone** continues to show a protective effect (HR = 0.822,
+    95% CI: 0.690-0.980).
+
+This comprehensive model highlights the critical interplay between
+treatment retention, social determinants (housing), substance type, and
+medication in determining mortality outcomes. The finding that treatment
+discontinuation is associated with nearly three times the mortality risk
+underscores the life-saving potential of effective retention strategies.
+
+## Error Handling with episodes Functions
+
+When using the `episodes` package functions, you can implement robust
+error handling to better diagnose issues:
+
+```{r, eval=FALSE}
+withCallingHandlers(
+  substance_use |>
+    group_by(client_id) |>
+    segment_episodes(
+      date_col = visit_date,
+      gap_threshold = 60,
+      gap_unit = "days",
+      progress = FALSE
+    ),
+  error = function(e) {
+    cli::cli_alert_danger("Error in segment_episodes: {conditionMessage(e)}")
+    print(parent.frame())
+  }
+)
+```
+
+## Conclusion
+
+The `episodes` package provides powerful tools for analyzing
+longitudinal health data:
+
+1.  `segment_episodes()` creates episode-level datasets based on
+    temporal gaps
+2.  `segment_episodes_by_covars()` allows for time-varying covariate
+    analysis
+3.  `add_surv_time()` prepares data for survival analysis
+
+These functions integrate seamlessly with tidymodels and survival
+analysis workflows, enabling sophisticated analyses of treatment
+patterns, outcomes, and risk factors.
+
+Key findings from our example analyses include:
+
+-   Mental health disorders are associated with better treatment
+    retention and lower mortality
+
+-   Housing instability significantly increases both discontinuation and
+    mortality risk
+
+-   Treatment discontinuation is associated with nearly three times
+    higher mortality risk
+
+-   Opiate use is consistently associated with higher mortality compared
+    to alcohol use
+
+-   Medications like Naltrexone show protective effects against
+    mortality
+
+By segmenting longitudinal data into meaningful episodes and
+incorporating time-varying covariates, researchers can gain deeper
+insights into the complex dynamics of substance use treatment outcomes.
