@@ -112,4 +112,4 @@ The package includes a simulated substance use treatment dataset:
 glimpse(substance_use)
 ```
 
-Read more about how to use this data to run survival analyses using `tidymodels` (`vignette("survival", package = "episodes")`).
+Read more about how to use this data to run survival analyses using `vignette("survival", package = "episodes")`.

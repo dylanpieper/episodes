@@ -16,8 +16,10 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
   warning = FALSE,
-  message = FALSE
+  message = FALSE,
+  dev = "png"
 )
+options(rmarkdown.html_vignette.check_title = FALSE)
 ```
 
 ## Introduction
