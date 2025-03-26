@@ -78,7 +78,7 @@ treatment_episodes_by_covars <- substance_use |>
   group_by(client_id) |>
   segment_episodes_by_covars(
     visit_date,
-    covar_cols = c("substance_use_past_week", "quality_of_life_score", "medication_dose_mg"),
+    covar_cols = c("died_last_visit", "frequency_of_use", "housing"),
     gap_threshold = 2,
     gap_unit = "months"
   )

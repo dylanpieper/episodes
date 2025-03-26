@@ -4,7 +4,7 @@ output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{survival}
   %\VignetteEncoding{UTF-8}
-  %\VignetteDepends{episodes, tidymodels, censored, survival, ggsurvfit, dplyr}
+  %\VignetteDepends{episodes, tidymodels, censored, survival, ggsurvfit, scales, dplyr}
   %\VignetteEngine{knitr::rmarkdown}
 editor_options: 
   markdown: 
@@ -22,16 +22,16 @@ knitr::opts_chunk$set(
 
 ## Introduction
 
-The `episodes` package segments longitudinal data into meaningful
+The {episodes} package segments longitudinal data into meaningful
 episodes based on temporal gaps and variable changes. It's designed for
 analyzing treatment patterns, patient journeys, and other time series
 data where interruptions and changes in covariates are important to
 model.
 
 This vignette demonstrates how to apply these features to survival
-analysis using the Cox proportional hazards model with both fixed and
-time-varying covariates. I will be using the simulated `substance_use`
-dataset included in the package.
+analysis using {tidymodels} to run Cox proportional hazards models with
+both fixed and time-varying covariates. I will be using the simulated
+`substance_use` dataset included in the package.
 
 ## Required Packages
 
@@ -193,7 +193,7 @@ The time-varying model provides a more nuanced understanding of
 retention dynamics, highlighting the importance of housing stability as
 a key factor in treatment continuation.
 
-## Time to Death Analysis
+## Time to Death (Last Episode)
 
 ### Last Episode Analysis
 
@@ -327,7 +327,7 @@ The time-varying model highlights how critical social determinants of
 health (housing) and current use patterns are in predicting mortality
 risk beyond static client characteristics.
 
-## Death Analysis Across All Episodes
+## Time to Death (All Episodes)
 
 ### Basic Model with Clustering
 
@@ -440,31 +440,63 @@ medication in determining mortality outcomes. The finding that treatment
 discontinuation is associated with nearly three times the mortality risk
 underscores the life-saving potential of effective retention strategies.
 
-## Error Handling with episodes Functions
+## Limitations
 
-When using the `episodes` package functions, you can implement robust
-error handling to better diagnose issues:
+Keep in mind that these are simple Cox models to inspire users of
+{episodes} to see how easy it is to get started running survival
+analyses. Additionally, we are not testing any of the assumptions,
+mainly the proportional hazards assumption.
 
-```{r, eval=FALSE}
-withCallingHandlers(
-  substance_use |>
-    group_by(client_id) |>
-    segment_episodes(
-      date_col = visit_date,
-      gap_threshold = 60,
-      gap_unit = "days",
-      progress = FALSE
-    ),
-  error = function(e) {
-    cli::cli_alert_danger("Error in segment_episodes: {conditionMessage(e)}")
-    print(parent.frame())
-  }
-)
-```
+Some limitations to consider:
+
+1.  The proportional hazards assumption should be verified using tests
+    like Schoenfeld residuals (`cox.zph()` in the {survival} package)
+
+2.  Recurrent events are treated independently, ignoring temporal
+    ordering effects
+
+3.  Competing risks and multiple states (discontinuation and death) are
+    not accounted for, which may lead to biased estimates
+
+## R Package Suggestions
+
+If you're interested in exploring more complex modeling approaches, you
+could consider:
+
+### For Cox Models
+
+-   {survival}: The foundation for survival analysis in R with functions
+    for Cox regression, Kaplan-Meier curves, and diagnostics
+
+-   {survminer}: Enhanced visualization of survival analyses
+
+-   {coxme}: Mixed-effects Cox models for clustered/grouped data
+
+### More Complex Models
+
+-   {cmprsk} or {riskRegression}: Competing risks analysis
+
+-   {frailtypack}: Joint frailty models for recurrent events and terminal events
+
+-   {msm}: Multi-state models for transitions between states
+
+-   {mstate}: Multi-state modeling with the Cox proportional hazards model
+
+### Assumptions Testing
+
+-   {flexsurv}: Flexible parametric survival models
+
+-   {timereg}: For non-proportional hazards models
+
+### Bayesian Approaches
+
+-   {rstanarm}: Bayesian survival models using Stan
+
+-   {brms}: Flexible Bayesian regression models including survival models
 
 ## Conclusion
 
-The `episodes` package provides powerful tools for analyzing
+The {episodes} package provides powerful tools for analyzing
 longitudinal health data:
 
 1.  `segment_episodes()` creates episode-level datasets based on
@@ -473,26 +505,9 @@ longitudinal health data:
     analysis
 3.  `add_surv_time()` prepares data for survival analysis
 
-These functions integrate seamlessly with tidymodels and survival
+These functions integrate seamlessly with {tidymodels} and survival
 analysis workflows, enabling sophisticated analyses of treatment
 patterns, outcomes, and risk factors.
-
-Key findings from our example analyses include:
-
--   Mental health disorders are associated with better treatment
-    retention and lower mortality
-
--   Housing instability significantly increases both discontinuation and
-    mortality risk
-
--   Treatment discontinuation is associated with nearly three times
-    higher mortality risk
-
--   Opiate use is consistently associated with higher mortality compared
-    to alcohol use
-
--   Medications like Naltrexone show protective effects against
-    mortality
 
 By segmenting longitudinal data into meaningful episodes and
 incorporating time-varying covariates, researchers can gain deeper

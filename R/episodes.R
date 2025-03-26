@@ -402,7 +402,7 @@ segment_episodes <- function(.data, date_col,
 #'   group_by(client_id) |>
 #'   segment_episodes_by_covars(
 #'     visit_date,
-#'     covar_cols = c("substance_use_past_week", "quality_of_life_score", "medication_dose_mg"),
+#'     covar_cols = c("died_last_visit", "frequency_of_use", "housing"),
 #'     gap_threshold = 2,
 #'     gap_unit = "months"
 #'   )
@@ -959,9 +959,9 @@ split_episode <- function(.data,
 add_surv_time <- function(grouped_df) {
   grouped_df |>
     mutate(
-      start_time = as.numeric(segment_start - min(segment_start)),
-      end_time = as.numeric(segment_end - min(segment_start)),
-      end_time = ifelse(end_time == 0, 1, end_time),
-      end_time = ifelse(end_time == start_time, end_time + 1, end_time)
+      start_time = as.numeric(.data$segment_start - min(.data$segment_start)),
+      end_time = as.numeric(.data$segment_end - min(.data$segment_start)),
+      end_time = ifelse(.data$end_time == 0, 1, .data$end_time),
+      end_time = ifelse(.data$end_time == .data$start_time, .data$end_time + 1, .data$end_time)
     )
 }

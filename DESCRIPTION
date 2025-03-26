@@ -28,6 +28,7 @@ Suggests:
     ggsurvfit,
     knitr,
     rmarkdown,
+    scales,
     survival,
     testthat (>= 3.0.0),
     tidymodels
