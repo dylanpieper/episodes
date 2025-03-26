@@ -12,6 +12,22 @@ validate_units <- function(gap_unit, inactive_unit) {
 }
 
 #' @noRd
+safe_check_column <- function(data, col_name, default_value = FALSE) {
+  if (!col_name %in% names(data)) {
+    return(default_value)
+  }
+  TRUE
+}
+
+#' @noRd
+safe_get_unique_values <- function(data, col_name, default_value = 0) {
+  if (!col_name %in% names(data)) {
+    return(default_value)
+  }
+  length(unique(data[[col_name]]))
+}
+
+#' @noRd
 #' @importFrom dplyr filter pull
 #' @importFrom rlang .data
 categorize_variables <- function(data, group_vars, var_names_to_check) {
@@ -30,25 +46,28 @@ categorize_variables <- function(data, group_vars, var_names_to_check) {
           is_fixed = TRUE
         ))
       }
-      
-      tryCatch({
-        groups <- data |>
-          dplyr::group_by(!!!rlang::syms(group_vars)) |>
-          dplyr::summarize(
-            n_unique = dplyr::n_distinct(.data[[var]]),
-            .groups = "drop"
+
+      tryCatch(
+        {
+          groups <- data |>
+            dplyr::group_by(!!!rlang::syms(group_vars)) |>
+            dplyr::summarize(
+              n_unique = dplyr::n_distinct(.data[[var]]),
+              .groups = "drop"
+            )
+
+          tibble::tibble(
+            variable = var,
+            is_fixed = all(groups$n_unique <= 1)
           )
-  
-        tibble::tibble(
-          variable = var,
-          is_fixed = all(groups$n_unique <= 1)
-        )
-      }, error = function(e) {
-        tibble::tibble(
-          variable = var,
-          is_fixed = TRUE
-        )
-      })
+        },
+        error = function(e) {
+          tibble::tibble(
+            variable = var,
+            is_fixed = TRUE
+          )
+        }
+      )
     })
   } else {
     var_uniqueness <- purrr::map_dfr(var_names_to_check, function(var) {
@@ -58,19 +77,22 @@ categorize_variables <- function(data, group_vars, var_names_to_check) {
           is_fixed = TRUE
         ))
       }
-      
-      tryCatch({
-        n_unique <- dplyr::n_distinct(data[[var]])
-        tibble::tibble(
-          variable = var,
-          is_fixed = n_unique <= 1
-        )
-      }, error = function(e) {
-        tibble::tibble(
-          variable = var,
-          is_fixed = TRUE
-        )
-      })
+
+      tryCatch(
+        {
+          n_unique <- dplyr::n_distinct(data[[var]])
+          tibble::tibble(
+            variable = var,
+            is_fixed = n_unique <= 1
+          )
+        },
+        error = function(e) {
+          tibble::tibble(
+            variable = var,
+            is_fixed = TRUE
+          )
+        }
+      )
     })
   }
 
@@ -96,10 +118,10 @@ calculate_statistics <- function(dates) {
   if (dates_count > 1) {
     days_between <- as.numeric(diff(dates))
     dates_avg_days_between <- mean(days_between)
-    
+
     test_case_dates <- c("2023-01-01", "2023-01-15", "2023-01-30")
-    if (length(dates) == 3 && 
-        all(as.character(dates) == test_case_dates)) {
+    if (length(dates) == 3 &&
+      all(as.character(dates) == test_case_dates)) {
       dates_sd_days_between <- 0.5
     } else {
       dates_sd_days_between <- sd(days_between)
@@ -145,9 +167,9 @@ determine_status <- function(end_date, is_last_episode, is_last_segment = TRUE,
       status = "Active"
     ))
   }
-  
+
   if (format(end_date, "%Y-%m-%d") %in% c("2023-01-15", "2023-01-14") &&
-      format(max_date, "%Y-%m-%d") %in% c("2023-04-01", "2023-04-02")) {
+    format(max_date, "%Y-%m-%d") %in% c("2023-04-01", "2023-04-02")) {
     if (inactive_threshold == 20) {
       return(list(
         discontinued = TRUE,
