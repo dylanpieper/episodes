@@ -24,6 +24,10 @@ are created whenever covariate values change."></head><body>
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/survival.html">Survival Analysis with episodes and tidymodels</a></li>
+  </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
@@ -152,25 +156,30 @@ specific episode number. Default is "all"</p></dd>
 <span class="r-in"><span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">client_id</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
 <span class="r-in"><span>  <span class="fu">segment_episodes_by_covars</span><span class="op">(</span></span></span>
 <span class="r-in"><span>    <span class="va">visit_date</span>,</span></span>
-<span class="r-in"><span>    covar_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"substance_use_past_week"</span>, <span class="st">"quality_of_life_score"</span>, <span class="st">"medication_dose_mg"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>    covar_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"died_last_visit"</span>, <span class="st">"frequency_of_use"</span>, <span class="st">"housing"</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>    gap_threshold <span class="op">=</span> <span class="fl">2</span>,</span></span>
 <span class="r-in"><span>    gap_unit <span class="op">=</span> <span class="st">"months"</span></span></span>
 <span class="r-in"><span>  <span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Segmenting episodes by covariates <span style="color: #00BB00;">■■                              </span>   4% | ETA: …</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Segmenting episodes by covariates <span style="color: #00BB00;">■■■■■                           </span>  12% | ETA: …</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Segmenting episodes by covariates <span style="color: #00BB00;">■■■■■■■■                        </span>  24% | ETA: …</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Segmenting episodes by covariates <span style="color: #00BB00;">■■■■■■■■■■■■                    </span>  36% | ETA: …</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Segmenting episodes by covariates <span style="color: #00BB00;">■■■■■■■■■■■■■■■                 </span>  47% | ETA: …</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Segmenting episodes by covariates <span style="color: #00BB00;">■■■■■■■■■■■■■■■■■■■             </span>  60% | ETA: …</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Segmenting episodes by covariates <span style="color: #00BB00;">■■■■■■■■■■■■■■■■■■■■■■■         </span>  72% | ETA: …</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Segmenting episodes by covariates <span style="color: #00BB00;">■■■■■■■■■■■■■■■■■■■■■■■■■■      </span>  84% | ETA: …</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Segmenting episodes by covariates <span style="color: #00BB00;">■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■  </span>  95% | ETA: …</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Segmenting episodes by covariates <span style="color: #00BB00;">■■                              </span>   3% | ETA: …</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Segmenting episodes by covariates <span style="color: #00BB00;">■■■                             </span>   5% | ETA: …</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Segmenting episodes by covariates <span style="color: #00BB00;">■■■■■                           </span>  14% | ETA: …</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Segmenting episodes by covariates <span style="color: #00BB00;">■■■■■■■■                        </span>  23% | ETA: …</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Segmenting episodes by covariates <span style="color: #00BB00;">■■■■■■■■■■                      </span>  31% | ETA: …</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Segmenting episodes by covariates <span style="color: #00BB00;">■■■■■■■■■■■■■                   </span>  40% | ETA: …</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Segmenting episodes by covariates <span style="color: #00BB00;">■■■■■■■■■■■■■■■■                </span>  49% | ETA: …</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Segmenting episodes by covariates <span style="color: #00BB00;">■■■■■■■■■■■■■■■■■■              </span>  58% | ETA: …</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Segmenting episodes by covariates <span style="color: #00BB00;">■■■■■■■■■■■■■■■■■■■■■           </span>  66% | ETA: …</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Segmenting episodes by covariates <span style="color: #00BB00;">■■■■■■■■■■■■■■■■■■■■■■■■        </span>  75% | ETA: …</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Segmenting episodes by covariates <span style="color: #00BB00;">■■■■■■■■■■■■■■■■■■■■■■■■■■      </span>  85% | ETA: …</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Segmenting episodes by covariates <span style="color: #00BB00;">■■■■■■■■■■■■■■■■■■■■■■■■■■■■■   </span>  94% | ETA: …</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Segmenting episodes by covariates <span style="color: #00BB00;">■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■ </span> 100% | ETA: …</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Covariates used for segmentation:</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> <span style="color: #0000BB;">"substance_use_past_week"</span>, <span style="color: #0000BB;">"quality_of_life_score"</span>, and <span style="color: #0000BB;">"medication_dose_mg"</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> <span style="color: #0000BB;">"died_last_visit"</span>, <span style="color: #0000BB;">"frequency_of_use"</span>, and <span style="color: #0000BB;">"housing"</span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Fixed variables included:</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> <span style="color: #0000BB;">"medication_name"</span>, <span style="color: #0000BB;">"Age"</span>, <span style="color: #0000BB;">"Gender"</span>, <span style="color: #0000BB;">"Race"</span>, <span style="color: #0000BB;">"primary_substance"</span>,</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>   <span style="color: #0000BB;">"baseline_housing"</span>, and <span style="color: #0000BB;">"trauma_history"</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> <span style="color: #0000BB;">"substance"</span>, <span style="color: #0000BB;">"medication"</span>, <span style="color: #0000BB;">"age"</span>, <span style="color: #0000BB;">"gender"</span>, <span style="color: #0000BB;">"race"</span>, <span style="color: #0000BB;">"mental_health_disorder"</span>,</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   and <span style="color: #0000BB;">"died_ever"</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Varying variables excluded:</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> <span style="color: #0000BB;">"discontinued"</span></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
